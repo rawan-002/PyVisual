@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Visual Python</title>
+  <meta name="description" content="Write any Python code and see it drawn: memory, flowchart and graphics, step by step.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>Visual Python</h1>
+      <p>Write any Python code and see it drawn</p>
+    </div>
+    <div class="top-actions">
+      <select id="examples" aria-label="Examples">
+        <option value="">Try an example…</option>
+      </select>
+      <div id="status" class="status loading" role="status">
+        <span class="dot"></span><span id="statusText">Loading Python…</span>
+      </div>
+      <button id="btnDedication" class="dedication-btn" type="button" title="A dedication" aria-label="Open the dedication" hidden>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M7 8.5C5 8.5 3.5 10.1 3.5 12S5 15.5 7 15.5c3 0 7-7 10-7 2 0 3.5 1.6 3.5 3.5S19 15.5 17 15.5c-3 0-7-7-10-7z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <dialog id="dedication" class="dedication" aria-labelledby="dedicationText">
+    <p id="dedicationText">To the girl I’ve always believed in, and will always be proud of.</p>
+    <img id="dedicationImg" class="dedication-img" alt="" hidden>
+  </dialog>
+
+  <main class="layout">
+    <!-- Code -->
+    <section class="col-code">
+      <div class="card">
+        <div class="card-head">
+          <h3>Code</h3>
+          <div class="head-actions">
+            <label class="switch" title="Run automatically while typing">
+              <input type="checkbox" id="chkAuto"> <span>Auto-run</span>
+            </label>
+            <button id="btnClear" class="link">Clear</button>
+          </div>
+        </div>
+        <div id="editor"></div>
+        <div class="ed-resize" id="edResize" role="separator" aria-orientation="horizontal" aria-label="Resize the code area" tabindex="0" title="Drag to make the code area taller or shorter · double-click to reset"><span></span></div>
+        <details class="stdin-box" id="stdinBox">
+          <summary>Input <small>values for <code>input()</code>, one per line</small></summary>
+          <textarea id="stdin" rows="3" spellcheck="false" placeholder="Sara&#10;20"></textarea>
+        </details>
+        <div class="controls">
+          <button id="btnRun" class="primary" disabled>Run</button>
+          <button id="btnStep" disabled>Step by step</button>
+          <span class="hint">Ctrl + Enter</span>
+        </div>
+
+        <div class="stepper" id="stepper" hidden>
+          <div class="step-row">
+            <div class="btn-group">
+              <button id="btnFirst" title="First step">⏮</button>
+              <button id="btnPrev" title="Previous step (←)">← Prev</button>
+              <button id="btnNext" class="primary" title="Next step (→)">Next →</button>
+              <button id="btnLast" title="Last step">⏭</button>
+            </div>
+            <button id="btnPlay">▶ Play</button>
+            <button id="btnExitStep" class="link">Exit</button>
+          </div>
+          <div class="step-row">
+            <input type="range" id="stepRange" min="0" max="0" value="0" aria-label="Step">
+            <span id="stepCount" class="step-count"></span>
+          </div>
+          <div class="step-row small">
+            <span>Speed</span>
+            <input type="range" id="speed" min="0" max="100" value="55" aria-label="Speed">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>What happened?</h3></div>
+        <div id="explain" class="explain"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>Output</h3></div>
+        <pre id="output" class="output"></pre>
+      </div>
+    </section>
+
+    <!-- Visualization -->
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" aria-label="Resize the code and drawing columns" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+    <section class="col-visual card">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="mem">Memory</button>
+        <button class="tab" role="tab" data-tab="flow">Flowchart</button>
+        <button class="tab" role="tab" data-tab="gfx">Graphics <span id="gfxBadge" class="badge" hidden></span></button>
+        <div class="tab-tools" id="flowTools">
+          <span class="drag-hint">Drag boxes to move them</span>
+          <button id="diskReset" class="link" title="Delete the files your programs created and restore data.txt">Reset disk</button>
+          <button id="layoutReset" class="link" title="Reset layout">Reset layout</button>
+          <button id="zoomOut" class="icon" title="Zoom out (Ctrl + wheel)">−</button>
+          <button id="zoomFit" class="icon" title="Fit to screen">⤢</button>
+          <button id="zoomIn" class="icon" title="Zoom in (Ctrl + wheel)">+</button>
+        </div>
+      </div>
+
+      <div class="pane" data-pane="mem">
+        <div class="pane-scroll" id="memScroll">
+          <div id="memSizer" class="mem-sizer"><div id="mem" class="mem"></div></div>
+        </div>
+      </div>
+
+      <div class="pane" data-pane="flow" hidden>
+        <div class="pane-scroll" id="flowScroll">
+          <div id="flow" class="flow"></div>
+        </div>
+      </div>
+
+      <div class="pane" data-pane="gfx" hidden>
+        <div class="pane-scroll">
+          <div id="gfx" class="gfx">
+            <div class="canvas-wrap" id="turtleWrap" hidden>
+              <canvas id="canvas" width="400" height="400" aria-label="Turtle canvas"></canvas>
+              <div id="tooltip" class="tooltip" hidden></div>
+            </div>
+            <div id="figs" class="figs"></div>
+            <div id="gfxEmpty" class="gfx-empty">
+              <p>No graphics in this program.</p>
+              <p>Use <code>matplotlib</code> for charts or <code>turtle</code> for drawing, and they will appear here.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/examples.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
